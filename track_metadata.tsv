@@ -1,0 +1,4 @@
+Name	ID	Path	FileFormat
+H3K27ac	H3K27ac_R1.igg.cpm	../BRD2_R1.igg.cpm.bw	bigWig
+H3K27me3	H3K27me3_R1.igg.cpm	../PBS_H3K27me3_R1.igg.cpm.bw	bigWig
+H3K4me3	H3K4me3_R1.igg.cpm	../PBS_DMSO_H3K4me3_R1.igg.cpm.bw	bigWig
