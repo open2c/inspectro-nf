@@ -7,6 +7,8 @@
 
 ## Introduction
 
+![text20792-99](https://github.com/tariship/inspectro-nf/assets/90934721/be1d9b8f-546c-4277-849e-74de28a6bc34)
+
 Inspectro is a bioinformatics pipeline that characterizes long-range interaction profiles in Hi-C maps by spectral decomposition. The pipeline is built using Nextflow, a workflow tool that enables easy installation and reproducibility of the pipeline through Docker containers. 
 
 This pipeline (v1.2) now supports local files  as well as S3 files for bigwig/bigbed tracks. 
