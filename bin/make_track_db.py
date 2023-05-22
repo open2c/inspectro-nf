@@ -33,6 +33,7 @@ with open(args.config, "r") as infile:
 assembly = config["assembly"]
 binsize = config["binsize"]
 track_db = f"tracks.{assembly}.{binsize}.h5"
+local_path = "local_track_files/"
 
 CHROMSIZES = bioframe.fetch_chromsizes(assembly)
 CHROMOSOMES = list(CHROMSIZES[:'chrY'].index)
@@ -72,6 +73,7 @@ with h5py.File(track_db, 'a') as f:
             x = common.fetch_binned(
                 paths[acc],
                 CHROMSIZES,
+                local_path,
                 CHROMOSOMES,
                 binsize,
                 map
