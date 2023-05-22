@@ -43,7 +43,7 @@ Future update: Adding iGenomes, which will provide the option to use your own fa
   ```
 
 ## Credits
-Tarishi Pathak, George Spracklin, Nezar Abdennur
+Tarishi Pathak, Aleksandra Galitsyna, George Spracklin, Nezar Abdennur
 
 ## Citation
 
