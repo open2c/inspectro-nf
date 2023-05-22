@@ -35,4 +35,7 @@ dependencies:
       - scikit-learn
       - boto3
 prefix: /opt/install/conda
+<<<<<<< HEAD
 
+=======
+>>>>>>> c81a2600c1f18debf0ae15661e02644edd0ffa15
