@@ -4,12 +4,15 @@
 [![run with conda](http://img.shields.io/badge/run%20with-conda-3EB049?labelColor=000000&logo=anaconda)](https://docs.conda.io/en/latest/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 
+
 ## Introduction
 
 Inspectro is a bioinformatics pipeline that characterizes long-range interaction profiles in Hi-C maps by spectral decomposition. The pipeline is built using Nextflow, a workflow tool that enables easy installation and reproducibility of the pipeline through Docker containers. 
 
-This pipeline is currently only supported to run locally. We're working on being able to use AWS S3 paths in the `track_metadata.tsv` file as well as adding the capability to run on Tower. We will also be adding iGenomes, which will provide the option to use your own fasta file or one provided by iGenomes for the genome of your choice.
+This pipeline (v1.2) now supports local files  as well as S3 files for bigwig/bigbed tracks. 
 
+Future update: Adding iGenomes, which will provide the option to use your own fasta file or one provided by iGenomes for the genome of your choice.
+ 
 ## Quick Start and Usage
 
 1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`)
