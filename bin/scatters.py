@@ -81,4 +81,4 @@ for clus in n_clusters:
         trackconfs=config["tracks"],
         panels=config["scatter_groups"],
     )
-    plt.savefig(f"{sample}.{binsize}.E1-E{n_eigs}..kmeansm{clus}.scatter.pdf", bbox_inches='tight')
+    plt.savefig(f"{sample}.{binsize}.E1-E{n_eigs}.kmeansm{clus}.scatter.pdf", bbox_inches='tight')
