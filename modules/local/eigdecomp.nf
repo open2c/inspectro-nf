@@ -11,6 +11,7 @@ process eigdecomp {
     input:
         path config
         path bins
+        path blacklist
         path mcool
 
     output:
@@ -20,6 +21,6 @@ process eigdecomp {
     script:
 
     """ 
-    eigdecomp_main.py --config ${config} --bins ${bins} --cooler ${mcool}
+    eigdecomp_main.py --config ${config} --bins ${bins} --blacklist ${blacklist} --cooler ${mcool}
     """ 
 }

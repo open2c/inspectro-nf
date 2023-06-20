@@ -15,7 +15,7 @@ include { scatters } from './modules/local/scatters'
 workflow {
     make_bintable(params.config, params.genome)
     make_track_db(params.config, make_bintable.out.bins, params.meta) 
-    eigdecomp(params.config, make_bintable.out.bins, params.mcool)
+    eigdecomp(params.config, make_bintable.out.bins, params.blacklist, params.mcool)
     plot_spectrum(params.config, eigdecomp.out.eigvals)
     // make_multivec(params.config, eigdecomp.out.eigvals, eigdecomp.out.eigvecs)
     clustering(params.config, eigdecomp.out.eigvals, eigdecomp.out.eigvecs, make_bintable.out.bins)
