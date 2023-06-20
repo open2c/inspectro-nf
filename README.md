@@ -38,6 +38,7 @@ Future update: Adding iGenomes, which will provide the option to use your own fa
       --genome <FASTA_file> \
       --meta track_metadata.tsv \
       --outdir <OUTDIR> \
+      --blacklist <blacklist_file> \
       --mcool <mcool_file> \
       --profile docker
   ```
