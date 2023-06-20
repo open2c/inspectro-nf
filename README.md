@@ -20,6 +20,7 @@ Future update: Adding iGenomes, which will provide the option to use your own fa
 1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`)
 
 2. Install [`Docker`](https://docs.docker.com/engine/installation/) to implement environment for pipeline reproducibility.
+Build the Docker image: `docker build -t open2c/inspectrov1.2:latest ./docker`
 
 3. Place supplementary tab-delimited bigwig file with a header in `data/track_metadata.tsv` to include in graphical outputs. The following columns must be included:
 
