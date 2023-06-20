@@ -11,7 +11,9 @@
 
 Inspectro is a bioinformatics pipeline that characterizes long-range interaction profiles in Hi-C maps by spectral decomposition. The pipeline is built using Nextflow, a workflow tool that enables easy installation and reproducibility of the pipeline through Docker containers. 
 
-This pipeline (v1.2) now supports local files  as well as S3 files for bigwig/bigbed tracks. 
+This pipeline (v1.2) supports S3 files for bigwig/bigbed tracks.
+
+Note: Local files are not currently supported.
 
 Future update: Adding iGenomes, which will provide the option to use your own fasta file or one provided by iGenomes for the genome of your choice.
  
