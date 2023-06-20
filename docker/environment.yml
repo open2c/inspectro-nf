@@ -13,7 +13,7 @@ dependencies:
   - bioconda::ucsc-bedgraphtobigwig
   - bioconda::ucsc-bigwigtobedgraph
   - pip:
-      - bioframe==0.3.*
+      - bioframe
       - h5py
       - cooler
       - cooltools
