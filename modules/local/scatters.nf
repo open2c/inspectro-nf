@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 process scatters {
 
     label 'process_medium'
-    container = 'tariship/inspectrov1.2:latest'
+    container = 'open2c/inspectrov1.2:latest'
     publishDir "${params.outdir}/figures"
         
     input:

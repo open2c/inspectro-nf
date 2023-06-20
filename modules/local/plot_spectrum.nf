@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 process plot_spectrum {
 
     label 'process_single'
-    container = 'tariship/inspectrov1.2:latest'
+    container = 'open2c/inspectrov1.2:latest'
     publishDir "${params.outdir}/figures"
     
     input:

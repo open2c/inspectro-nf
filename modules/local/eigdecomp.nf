@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 process eigdecomp {
     
     label 'process_high'
-    container = 'tariship/inspectrov1.2:latest'
+    container = 'open2c/inspectrov1.2:latest'
     publishDir "${params.outdir}"
 
     input:
