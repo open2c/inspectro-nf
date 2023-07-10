@@ -237,7 +237,7 @@ def eig_trans(
     # We actually extract n + 1 eigenvectors.
     # The first eigenvector, E0, will be uniform with eigenvalue 1.
     mask = np.sum(np.abs(A), axis=0) != 0
-    A_collapsed = A[mask, :][:, mask].astype(np.float, copy=True)
+    A_collapsed = A[mask, :][:, mask].astype(np.float64, copy=True)
     eigvals, eigvecs_collapsed = scipy.sparse.linalg.eigsh(
         A_collapsed,
         n_eigs + 1,
@@ -479,7 +479,7 @@ def eig_cis(
         if (A.shape[0] <= ignore_diags + n_eigs + 1) or (mask.sum() <= ignore_diags + n_eigs + 1):
             return _region, np.nan * np.ones(n_eigs+1), np.nan * np.ones((len(A), n_eigs+1))
 
-        A_collapsed = A[mask, :][:, mask].astype(np.float, copy=True)
+        A_collapsed = A[mask, :][:, mask].astype(np.float64, copy=True)
         eigvals, eigvecs_collapsed = scipy.sparse.linalg.eigsh(
             A_collapsed,
             n_eigs + 1,
