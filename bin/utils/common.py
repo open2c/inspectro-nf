@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import bbi
 import boto3
+from botocore import UNSIGNED
+from botocore.config import Config
 import os
 
 
@@ -13,7 +15,8 @@ def s3_to_local(s3_path, local_path):
     """
     Convert s3 paths to local file paths for pybbi to process.
     """
-    s3 = boto3.resource('s3')
+    # s3 = boto3.resource('s3')
+    s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
 
     path_parts = s3_path.replace("s3://","").split("/")
     bucket=path_parts.pop(0)
@@ -23,7 +26,8 @@ def s3_to_local(s3_path, local_path):
         os.makedirs(local_path)
 
     filename = key.rsplit('/', 1)[-1]
-    s3.Object(bucket, key).download_file(local_path + filename)
+    # s3.Object(bucket, key).download_file(local_path + filename)
+    s3.download_file(bucket, key, local_path + filename)
     local_file = f"{local_path}{filename}"
 
     return local_file
