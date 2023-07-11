@@ -1,27 +1,18 @@
 #!/usr/bin/env python3
 
-import matplotlib as mpl 
+import matplotlib as mpl
+
 mpl.use("Agg")
-import matplotlib.pyplot as plt 
-
-from functools import partial
-import os.path as op
-import pathlib
-
-from tqdm import tqdm
-import bioframe
-import cooler
-import h5py
-import numpy as np
-import pandas as pd
 import argparse
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import utils.plotting as plotting
 import yaml
 
-import utils.plotting as plotting
-
 parser = argparse.ArgumentParser()
-parser.add_argument('--config')
-parser.add_argument('--eigvals', help='parquet file with eigenvalues', required=True)
+parser.add_argument("--config")
+parser.add_argument("--eigvals", help="parquet file with eigenvalues", required=True)
 
 args = parser.parse_args()
 
@@ -39,8 +30,8 @@ eigval_df = pd.read_parquet(args.eigvals)
 plotting.plot_spectrum(
     eigval_df,
     n_eigs_display=min(32, n_eigs),
-    title= sample + "." + str(binsize),
-    outpath=eig_pdf
+    title=sample + "." + str(binsize),
+    outpath=eig_pdf,
 )
 
 plt.savefig(eig_pdf)

@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
-from math import ceil
-import os.path as op
 import math
+from math import ceil
 
-from scipy.special import logsumexp
-import numpy as np
-import pandas as pd
 import h5py
+import numpy as np
+from scipy.special import logsumexp
 
 
 def nansum_agg(x):
@@ -35,16 +33,13 @@ def to_multivec(
     h5opts=None,
 ):
     if h5opts is None:
-        h5opts = {
-            'compression': 'gzip',
-            'compression_opts': 6,
-            'shuffle': True
-        }
+        h5opts = {"compression": "gzip", "compression_opts": 6, "shuffle": True}
 
     chromosomes = list(chromsizes.keys())
-    grouped = df.groupby('chrom')
+    grouped = df.groupby("chrom")
     array_dict = {
-        chrom: grouped.get_group(chrom).loc[:, feature_names].values for chrom in chromosomes
+        chrom: grouped.get_group(chrom).loc[:, feature_names].values
+        for chrom in chromosomes
     }
     chroms, lengths = zip(*chromsizes.items())
     chrom_array = np.array(chroms, dtype="S")
@@ -64,10 +59,7 @@ def to_multivec(
             **h5opts
         )
         f["chroms"].create_dataset(
-            "length",
-            shape=(len(chroms),),
-            data=lengths,
-            **h5opts
+            "length", shape=(len(chroms),), data=lengths, **h5opts
         )
 
         # the data goes here
@@ -98,18 +90,14 @@ def to_multivec(
                 continue
 
             dset = grp["values"].create_dataset(
-                str(chrom),
-                array_dict[chrom].shape,
-                **h5opts
+                str(chrom), array_dict[chrom].shape, **h5opts
             )
             start = 0
             step = int(min(chunksize, len(dset)))
             while start < len(dset):
                 # see above section
-                dset[start : start + step] = \
-                    array_dict[chrom][start : start + step]
+                dset[start : start + step] = array_dict[chrom][start : start + step]
                 start += int(min(chunksize, len(array_dict[chrom]) - start))
-
 
         # we're going to go through and create the data for the different
         # zoom levels by summing adjacent data points
@@ -136,12 +124,8 @@ def to_multivec(
                 start = 0
                 step = int(min(chunksize, len(prev_dset)))
 
-                shape = (int(ceil(prev_dset.shape[0]/2)), prev_dset.shape[1])
-                dset = grp["values"].create_dataset(
-                    chrom,
-                    shape,
-                    **h5opts
-                )
+                shape = (int(ceil(prev_dset.shape[0] / 2)), prev_dset.shape[1])
+                dset = grp["values"].create_dataset(chrom, shape, **h5opts)
                 while start < len(prev_dset):
                     prev_data = prev_dset[start : start + step]
 
@@ -160,4 +144,3 @@ def to_multivec(
                     start += int(min(chunksize, len(prev_dset) - start))
 
             prev_res = res
-            
