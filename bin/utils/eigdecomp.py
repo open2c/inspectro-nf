@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 
+import bioframe
 import numpy as np
 import pandas as pd
 import scipy.sparse
 import scipy.stats
-
+from cooltools.api.eigdecomp import _fake_cis, _filter_heatmap
 from cooltools.lib import numutils
-from cooltools.api.eigdecomp import _filter_heatmap, _fake_cis
-
-import bioframe
-import cooler
 
 
 def _orient_eigs(eigvecs, phasing_track, corr_metric=None):
@@ -33,7 +30,6 @@ def _orient_eigs(eigvecs, phasing_track, corr_metric=None):
     This function does NOT change the order of the eigenvectors.
     """
     for i in range(eigvecs.shape[1]):
-        
         mask = np.isfinite(eigvecs[:, i]) & np.isfinite(phasing_track)
 
         if corr_metric is None or corr_metric == "spearmanr":
@@ -45,9 +41,8 @@ def _orient_eigs(eigvecs, phasing_track, corr_metric=None):
             # multiply by the sign to keep the phasing information
             corr = np.sign(corr) * corr * corr * np.var(eigvecs[mask, i])
         elif corr_metric == "MAD_explained":
-            corr = (
-                numutils.COMED(phasing_track[mask], eigvecs[mask, i]) *
-                numutils.MAD(eigvecs[mask, i])
+            corr = numutils.COMED(phasing_track[mask], eigvecs[mask, i]) * numutils.MAD(
+                eigvecs[mask, i]
             )
         else:
             raise ValueError("Unknown correlation metric: {}".format(corr_metric))
@@ -72,9 +67,9 @@ def _normalized_affinity_matrix_from_trans(A, partition, perc_top, perc_bottom):
         whose last element is the last bin of the last chromosome.
     perc_top : float
         Clip trans blowout pixels above this cutoff.
-    perc_bottom : 
+    perc_bottom :
         Mask bins with trans coverage below this cutoff.
-    
+
     Returns
     -------
     2D array (n, n)
@@ -108,7 +103,9 @@ def _normalized_affinity_matrix_from_trans(A, partition, perc_top, perc_bottom):
     A[:, is_bad_bin] = 0
 
     if np.any(~np.isfinite(A)):
-        raise ValueError("Matrix A contains point-wise NaNs or infinite values, not expected for cooler-loaded maps")
+        raise ValueError(
+            "Matrix A contains point-wise NaNs or infinite values, not expected for cooler-loaded maps"
+        )
 
     # Filter the heatmap
     is_good_bin = ~is_bad_bin
@@ -149,12 +146,12 @@ def eig_trans(
     perc_top=99.95,
     phasing_track_col="GC",
     corr_metric=None,
-    which='LM',
+    which="LM",
 ):
     """
-    Spectral decomposition of trans Hi-C data derived from a normalized 
+    Spectral decomposition of trans Hi-C data derived from a normalized
     affinity representation.
-    Each eigenvector is deterministically oriented with respect to a provided 
+    Each eigenvector is deterministically oriented with respect to a provided
     "phasing track" (e.g. GC content).
     Parameters
     ----------
@@ -176,14 +173,14 @@ def eig_trans(
         Clip trans blowout pixels above this cutoff.
     perc_bottom : float
         Mask bins with trans coverage below this cutoff.
-    phasing_track_col : 
-        Column of bin table to use for deterministically orienting the 
+    phasing_track_col :
+        Column of bin table to use for deterministically orienting the
         eigenvectors.
     corr_metric : str
         Correlation metric to use for selecting orientations.
     which : str
         Code for the eigenvalue order in which components are calculated.
-        (LM = largest/descending magnitude/modulus; LA = largest/descending 
+        (LM = largest/descending magnitude/modulus; LA = largest/descending
         algebraic value).
     Returns
     -------
@@ -193,12 +190,12 @@ def eig_trans(
         Table of eigenvectors (as columns).
     Notes
     -----
-    This is very similar to the trans eigendecomposition method from 
-    Imakaev et al. 2012 and the implementation in cooltools but differs in 
-    how the matrix is normalized before being decomposed. The main impact is 
-    that the eigen*value* spectra end up being standardized and thus easier to 
+    This is very similar to the trans eigendecomposition method from
+    Imakaev et al. 2012 and the implementation in cooltools but differs in
+    how the matrix is normalized before being decomposed. The main impact is
+    that the eigen*value* spectra end up being standardized and thus easier to
     assess and compare between datasets. Moreover, because the matrix is not
-    mean-centered before decomposition, an additional trivial eigenvector will 
+    mean-centered before decomposition, an additional trivial eigenvector will
     be produced having eigenvalue 1. Hence, we return n_eigs + 1 vectors.
     For more details, see the Supplemental Note of Spracklin, Abdennur et al.,
     2021: https://www.biorxiv.org/content/10.1101/2021.08.05.455340v1.supplementary-material
@@ -214,8 +211,8 @@ def eig_trans(
     bins = bins[lo:hi]
 
     # Apply blacklist if available.
-    if 'is_bad' in bins.columns:
-        mask = bins['is_bad'].values.astype(bool)
+    if "is_bad" in bins.columns:
+        mask = bins["is_bad"].values.astype(bool)
         A[mask, :] = np.nan
         A[:, mask] = np.nan
 
@@ -229,19 +226,15 @@ def eig_trans(
         phasing_track = bins[phasing_track_col].values[lo:hi]
 
     # Compute the affinity matrix.
-    A = _normalized_affinity_matrix_from_trans(
-        A, partition, perc_top, perc_bottom
-    )
+    A = _normalized_affinity_matrix_from_trans(A, partition, perc_top, perc_bottom)
 
     # Compute eigs on the doubly stochastic affinity matrix
     # We actually extract n + 1 eigenvectors.
     # The first eigenvector, E0, will be uniform with eigenvalue 1.
     mask = np.sum(np.abs(A), axis=0) != 0
-    A_collapsed = A[mask, :][:, mask].astype(np.float, copy=True)
+    A_collapsed = A[mask, :][:, mask].astype(np.float64, copy=True)
     eigvals, eigvecs_collapsed = scipy.sparse.linalg.eigsh(
-        A_collapsed,
-        n_eigs + 1,
-        which=which
+        A_collapsed, n_eigs + 1, which=which
     )
     eigvecs = np.full((len(mask), n_eigs + 1), np.nan)
     eigvecs[mask, :] = eigvecs_collapsed
@@ -256,10 +249,12 @@ def eig_trans(
         eigvecs = _orient_eigs(eigvecs, phasing_track, corr_metric)
 
     # Prepare outputs.
-    eigval_table = pd.DataFrame({
-        'eig': ["E{}".format(i) for i in range(n_eigs + 1)],
-        'val': eigvals,
-    })
+    eigval_table = pd.DataFrame(
+        {
+            "eig": ["E{}".format(i) for i in range(n_eigs + 1)],
+            "val": eigvals,
+        }
+    )
     eigvec_table = bins.copy()
     for i in range(n_eigs + 1):
         eigvec_table["E{}".format(i)] = eigvecs[:, i].copy()
@@ -295,7 +290,9 @@ def _normalized_affinity_matrix_from_cis(A, perc_top, perc_bottom, ignore_diags=
 
     n_bins = A.shape[0]
     if ignore_diags >= n_bins:
-        raise ValueError("Number of ignored diagonals should be less than the number of bins")
+        raise ValueError(
+            "Number of ignored diagonals should be less than the number of bins"
+        )
 
     # Zero out bins nulled out using NaNs
     is_bad_bin = np.nansum(A, axis=0) == 0
@@ -303,7 +300,9 @@ def _normalized_affinity_matrix_from_cis(A, perc_top, perc_bottom, ignore_diags=
     A[:, is_bad_bin] = 0
 
     if np.any(~np.isfinite(A)):
-        raise ValueError("Matrix A contains point-wise NaNs or infinite values, not expected for cooler-loaded maps")
+        raise ValueError(
+            "Matrix A contains point-wise NaNs or infinite values, not expected for cooler-loaded maps"
+        )
 
     # Additional checks for ignore_diags after
     is_good_bin = ~is_bad_bin
@@ -342,6 +341,7 @@ def _normalized_affinity_matrix_from_cis(A, perc_top, perc_bottom, ignore_diags=
 
     return OE
 
+
 def eig_cis(
     clr,
     bins,
@@ -353,7 +353,7 @@ def eig_cis(
     perc_top=99.95,
     phasing_track_col="GC",
     corr_metric=None,
-    which='LM',
+    which="LM",
 ):
     """
     Spectral decomposition of cis Hi-C data derived from a normalized
@@ -407,7 +407,10 @@ def eig_cis(
     # get chromosomes from cooler, if view_df not specified:
     if view_df is None:
         view_df = bioframe.make_viewframe(
-            [(chrom, 0, clr.chromsizes[chrom]) for chrom in clr.chromnames and chrom in chomosomes_bins]
+            [
+                (chrom, 0, clr.chromsizes[chrom])
+                for chrom in clr.chromnames and chrom in chomosomes_bins
+            ]
         )
     else:
         # appropriate viewframe checks:
@@ -429,14 +432,12 @@ def eig_cis(
 
     # Prepare output table with eigenvectors
     eigvec_table = bins.copy()
-    eigvec_columns = [f"E{i}" for i in range(n_eigs+1)]
+    eigvec_columns = [f"E{i}" for i in range(n_eigs + 1)]
     for ev_col in eigvec_columns:
         eigvec_table[ev_col] = np.nan
 
     # Prepare output table with eigenvalues
-    eigval_table = pd.DataFrame({
-        'eig': eigvec_columns
-    })
+    eigval_table = pd.DataFrame({"eig": eigvec_columns})
 
     def _each(region):
         """
@@ -457,8 +458,8 @@ def eig_cis(
         A = clr.matrix(balance=balance).fetch(_region)
 
         # Apply blacklist if available.
-        if 'is_bad' in bins.columns:
-            mask = bioframe.select(bins, _region)['is_bad'].values.astype(bool)
+        if "is_bad" in bins.columns:
+            mask = bioframe.select(bins, _region)["is_bad"].values.astype(bool)
             A[mask, :] = np.nan
             A[:, mask] = np.nan
 
@@ -476,14 +477,18 @@ def eig_cis(
         # The first eigenvector, E0, will be uniform with eigenvalue 1.
         mask = np.sum(np.abs(A), axis=0) != 0
 
-        if (A.shape[0] <= ignore_diags + n_eigs + 1) or (mask.sum() <= ignore_diags + n_eigs + 1):
-            return _region, np.nan * np.ones(n_eigs+1), np.nan * np.ones((len(A), n_eigs+1))
+        if (A.shape[0] <= ignore_diags + n_eigs + 1) or (
+            mask.sum() <= ignore_diags + n_eigs + 1
+        ):
+            return (
+                _region,
+                np.nan * np.ones(n_eigs + 1),
+                np.nan * np.ones((len(A), n_eigs + 1)),
+            )
 
-        A_collapsed = A[mask, :][:, mask].astype(np.float, copy=True)
+        A_collapsed = A[mask, :][:, mask].astype(np.float64, copy=True)
         eigvals, eigvecs_collapsed = scipy.sparse.linalg.eigsh(
-            A_collapsed,
-            n_eigs + 1,
-            which=which
+            A_collapsed, n_eigs + 1, which=which
         )
         eigvecs = np.full((len(mask), n_eigs + 1), np.nan)
         eigvecs[mask, :] = eigvecs_collapsed
@@ -505,20 +510,18 @@ def eig_cis(
     # Go through eigendecomposition results and fill in
     # Output table eigvec_table and eigvals_table
     for _region, _eigvals, _eigvecs in results:
-
-        if len(_region)==3:
-            region_name = f'{_region[0]}:{_region[1]}-{_region[2]}'
+        if len(_region) == 3:
+            region_name = f"{_region[0]}:{_region[1]}-{_region[2]}"
         else:
             region_name = _region[3]
 
         idx = bioframe.select(eigvec_table, _region).index.values
-        eigvec_table.loc[idx, 'name'] = region_name
+        eigvec_table.loc[idx, "name"] = region_name
         eigvec_table.loc[idx, eigvec_columns] = _eigvecs
 
         eigval_table.loc[:, region_name] = _eigvals
 
     return eigval_table, eigvec_table
-
 
 
 def projection(A, eigs, n_eigs=None):
@@ -539,11 +542,8 @@ def projection(A, eigs, n_eigs=None):
         raise ValueError(f"Matrix and eigs shape mismatch: {n_bins} {len(eigs)}")
 
     # Filter out missing data:
-    E = eigs.loc[:, 'E0':f'E{n_eigs}'].to_numpy().astype(np.float64)
-    mask = (
-            (np.sum(np.abs(A), axis=0) != 0) &
-            (np.sum(np.isnan(E), axis=1) == 0)
-    )
+    E = eigs.loc[:, "E0":f"E{n_eigs}"].to_numpy().astype(np.float64)
+    mask = (np.sum(np.abs(A), axis=0) != 0) & (np.sum(np.isnan(E), axis=1) == 0)
     A_collapsed = A[mask, :][:, mask].astype(float, copy=True)
     E_collapsed = E[mask, :]
 
@@ -555,10 +555,11 @@ def projection(A, eigs, n_eigs=None):
     proj[mask, :] = np.hstack(result)
 
     # Create projection table:
-    proj_table = eigs.loc[:, ['chrom', 'start', 'end']].copy()
+    proj_table = eigs.loc[:, ["chrom", "start", "end"]].copy()
     for i in range(n_eigs + 1):
         proj_table["E{}".format(i)] = proj[:, i].copy()
-        proj_table["E{}".format(i)] /= np.linalg.norm(proj_table["E{}".format(i)].dropna())
+        proj_table["E{}".format(i)] /= np.linalg.norm(
+            proj_table["E{}".format(i)].dropna()
+        )
 
     return proj_table
-    

@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 
 import warnings
-import bioframe
+
 import numpy as np
 import pandas as pd
 
 
 def _extract_eigs(
-    eigvals, 
-    eigvecs, 
-    n_clusters, 
-    n_components, 
-    weight_by_eigval, 
-    keep_first, 
-    positive_eigs=False, 
-    filter_nans=True
+    eigvals,
+    eigvecs,
+    n_clusters,
+    n_components,
+    weight_by_eigval,
+    keep_first,
+    positive_eigs=False,
+    filter_nans=True,
 ):
     eigvecs = eigvecs.copy()
 
     # Decide whether to use unit normed vectors or to weight them by sqrt(|lambda_i|)
     if weight_by_eigval:
-        eigvecs.loc[:, 'E0':] *= np.sqrt(np.abs(eigvals.T.values))
+        eigvecs.loc[:, "E0":] *= np.sqrt(np.abs(eigvals.T.values))
 
     # Do the k-clustering on top k eigenvectors, unless overriden to use more or fewer
     if n_components is None:
@@ -29,14 +29,14 @@ def _extract_eigs(
     if not positive_eigs:
         # Decide whether to use E0 or not
         if keep_first:
-            elo, ehi = 'E0', f'E{n_components - 1}'
+            elo, ehi = "E0", f"E{n_components - 1}"
         else:
-            elo, ehi = 'E1', f'E{n_components}'
+            elo, ehi = "E1", f"E{n_components}"
         X = eigvecs.loc[:, elo:ehi].values
     else:
         if not keep_first:
-            eigvals = eigvals.drop('E0')
-        which = eigvals.loc[eigvals['val'] > 0].index[:n_components]
+            eigvals = eigvals.drop("E0")
+        which = eigvals.loc[eigvals["val"] > 0].index[:n_components]
         X = eigvecs.loc[:, which].values
 
     if not filter_nans:
@@ -57,45 +57,41 @@ def relabel_clusters(labels, n_clusters, sorting_tracks, sort_key):
     3. Length of corresponding chromosome arm.
     """
     # Assign the cluster IDs and extra data to temporary dataframe
-    df = sorting_tracks[['chrom', 'start', 'end', sort_key, 'centel', 'armlen']].copy()
-    df['centel_abs'] = df['centel'] * df['armlen']
-    df['cluster'] = labels
+    df = sorting_tracks[["chrom", "start", "end", sort_key, "centel", "armlen"]].copy()
+    df["centel_abs"] = df["centel"] * df["armlen"]
+    df["cluster"] = labels
 
     # Relabel the clusters using median of sorting column
-    df.loc[df['cluster'] == n_clusters, sort_key] = np.inf
+    df.loc[df["cluster"] == n_clusters, sort_key] = np.inf
     clusters_ordered = (
-        df
-        .groupby('cluster')
-        [sort_key]
-        .median()
-        .sort_values()
-        .index
-        .tolist()
+        df.groupby("cluster")[sort_key].median().sort_values().index.tolist()
     )
     cluster_dtype = pd.CategoricalDtype(clusters_ordered, ordered=True)
-    df['cluster_relabeled'] = df['cluster'].astype(cluster_dtype).cat.codes
+    df["cluster_relabeled"] = df["cluster"].astype(cluster_dtype).cat.codes
 
     # Reorder the bins for plotting
-    bin_ranks = (
-        df
-        .sort_values(
-            ['cluster_relabeled', 'centel_abs'],
-            ascending=[True, True]
-        )
-        .index
-        .values
-    )
-    return df['cluster_relabeled'].values, bin_ranks
+    bin_ranks = df.sort_values(
+        ["cluster_relabeled", "centel_abs"], ascending=[True, True]
+    ).index.values
+    return df["cluster_relabeled"].values, bin_ranks
 
 
-def kmeans_sm(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=False, keep_first=True, positive_eigs=False):
+def kmeans_sm(
+    eigvals,
+    eigvecs,
+    n_clusters,
+    n_components=None,
+    weight_by_eigval=False,
+    keep_first=True,
+    positive_eigs=False,
+):
     """
     Shi and Malik (2000)
     * Use the eigenvectors of L_rw (this doesn't matter for us).
     * NO row normalization before clustering.
     Notes
     -----
-    This is what sklearn spectral_clustering does on the eigenvectors of the 
+    This is what sklearn spectral_clustering does on the eigenvectors of the
     normalized laplacian (when using the k-means method).
     Sklearn's implementation does not unit norm the input vectors as some do.
     """
@@ -103,7 +99,7 @@ def kmeans_sm(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=
 
     model = KMeans(
         n_clusters=n_clusters,
-        init='k-means++',
+        init="k-means++",
         n_init=100,
         max_iter=10000,
         tol=0.00001,
@@ -116,7 +112,13 @@ def kmeans_sm(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=
     )
 
     x, mask = _extract_eigs(
-        eigvals, eigvecs, n_clusters, n_components, weight_by_eigval, keep_first, positive_eigs
+        eigvals,
+        eigvecs,
+        n_clusters,
+        n_components,
+        weight_by_eigval,
+        keep_first,
+        positive_eigs,
     )
     labels = np.full(len(mask), n_clusters)
     labels[mask] = model.fit_predict(x)
@@ -124,7 +126,15 @@ def kmeans_sm(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=
     return labels
 
 
-def gaussian_mixture_sm(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=False, keep_first=True, positive_eigs=False):
+def gaussian_mixture_sm(
+    eigvals,
+    eigvecs,
+    n_clusters,
+    n_components=None,
+    weight_by_eigval=False,
+    keep_first=True,
+    positive_eigs=False,
+):
     """
     Extends the Shi and Malik method to a GMM with no covariance constraints.
     * Use the eigenvectors of L_rw (this doesn't matter for us).
@@ -136,18 +146,24 @@ def gaussian_mixture_sm(eigvals, eigvecs, n_clusters, n_components=None, weight_
 
     model = GaussianMixture(
         n_components=n_clusters,
-        covariance_type='full',
+        covariance_type="full",
         tol=0.001,
         reg_covar=1e-06,
         n_init=100,
         max_iter=1000,
-        init_params='kmeans',
+        init_params="kmeans",
         random_state=42,
-        verbose=0
+        verbose=0,
     )
 
     x, mask = _extract_eigs(
-        eigvals, eigvecs, n_clusters, n_components, weight_by_eigval, keep_first, positive_eigs
+        eigvals,
+        eigvecs,
+        n_clusters,
+        n_components,
+        weight_by_eigval,
+        keep_first,
+        positive_eigs,
     )
     labels = np.full(len(mask), n_clusters)
     labels[mask] = model.fit_predict(x)
@@ -158,7 +174,15 @@ def gaussian_mixture_sm(eigvals, eigvecs, n_clusters, n_components=None, weight_
     return labels
 
 
-def kmeans_njw(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=False, keep_first=True, positive_eigs=False):
+def kmeans_njw(
+    eigvals,
+    eigvecs,
+    n_clusters,
+    n_components=None,
+    weight_by_eigval=False,
+    keep_first=True,
+    positive_eigs=False,
+):
     """
     Ng, Jordan and Weiss (2002)
     * Use the eigenvectors of L_sym (this doesn't matter for us).
@@ -168,18 +192,24 @@ def kmeans_njw(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval
 
     model = KMeans(
         n_clusters=n_clusters,
-        init='k-means++',
+        init="k-means++",
         n_init=100,
         max_iter=10000,
         tol=0.00001,
         verbose=0,
         random_state=42,
         n_jobs=32,
-        algorithm='auto',
+        algorithm="auto",
     )
 
     x, mask = _extract_eigs(
-        eigvals, eigvecs, n_clusters, n_components, weight_by_eigval, keep_first, positive_eigs
+        eigvals,
+        eigvecs,
+        n_clusters,
+        n_components,
+        weight_by_eigval,
+        keep_first,
+        positive_eigs,
     )
 
     # Normalize rows to norm 1
@@ -191,7 +221,15 @@ def kmeans_njw(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval
     return labels
 
 
-def gaussian_mixture_njw(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=False, keep_first=True, positive_eigs=False):
+def gaussian_mixture_njw(
+    eigvals,
+    eigvecs,
+    n_clusters,
+    n_components=None,
+    weight_by_eigval=False,
+    keep_first=True,
+    positive_eigs=False,
+):
     """
     Extends the Shi and Malik method to a GMM with no covariance constraints.
     * Use the eigenvectors of L_rw (this doesn't matter for us).
@@ -203,18 +241,24 @@ def gaussian_mixture_njw(eigvals, eigvecs, n_clusters, n_components=None, weight
 
     model = GaussianMixture(
         n_components=n_clusters,
-        covariance_type='full',
+        covariance_type="full",
         tol=0.001,
         reg_covar=1e-06,
         n_init=100,
         max_iter=1000,
-        init_params='kmeans',
+        init_params="kmeans",
         random_state=42,
-        verbose=0
+        verbose=0,
     )
 
     x, mask = _extract_eigs(
-        eigvals, eigvecs, n_clusters, n_components, weight_by_eigval, keep_first, positive_eigs
+        eigvals,
+        eigvecs,
+        n_clusters,
+        n_components,
+        weight_by_eigval,
+        keep_first,
+        positive_eigs,
     )
 
     # Normalize rows to norm 1
@@ -229,7 +273,15 @@ def gaussian_mixture_njw(eigvals, eigvecs, n_clusters, n_components=None, weight
     return labels
 
 
-def discretize_ys(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=False, keep_first=True, positive_eigs=False):
+def discretize_ys(
+    eigvals,
+    eigvecs,
+    n_clusters,
+    n_components=None,
+    weight_by_eigval=False,
+    keep_first=True,
+    positive_eigs=False,
+):
     """
     Yu and Shi (2003)
     * Use the unit-norm eigenvectors of L_rw (this doesn't matter for us).
@@ -249,7 +301,13 @@ def discretize_ys(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eig
     from sklearn.cluster._spectral import discretize
 
     x, mask = _extract_eigs(
-        eigvals, eigvecs, n_clusters, n_components, weight_by_eigval, keep_first, positive_eigs
+        eigvals,
+        eigvecs,
+        n_clusters,
+        n_components,
+        weight_by_eigval,
+        keep_first,
+        positive_eigs,
     )
     labels = np.full(len(mask), n_clusters)
 
@@ -259,7 +317,15 @@ def discretize_ys(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eig
     return labels
 
 
-def spherical_kmeans(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=False, keep_first=True, positive_eigs=False):
+def spherical_kmeans(
+    eigvals,
+    eigvecs,
+    n_clusters,
+    n_components=None,
+    weight_by_eigval=False,
+    keep_first=True,
+    positive_eigs=False,
+):
     """
     Project points onto the unit hypersphere and cluster.
     * Use the unit-norm eigenvectors of L_rw or L_sym (doesn't matter for us).
@@ -276,7 +342,7 @@ def spherical_kmeans(eigvals, eigvecs, n_clusters, n_components=None, weight_by_
 
     model = SphericalKMeans(
         n_clusters=n_clusters,
-        init='k-means++',
+        init="k-means++",
         n_init=100,
         max_iter=10000,
         tol=0.00001,
@@ -286,7 +352,13 @@ def spherical_kmeans(eigvals, eigvecs, n_clusters, n_components=None, weight_by_
     )
 
     x, mask = _extract_eigs(
-        eigvals, eigvecs, n_clusters, n_components, weight_by_eigval, keep_first, positive_eigs
+        eigvals,
+        eigvecs,
+        n_clusters,
+        n_components,
+        weight_by_eigval,
+        keep_first,
+        positive_eigs,
     )
 
     # Normalize rows to norm 1
@@ -298,7 +370,15 @@ def spherical_kmeans(eigvals, eigvecs, n_clusters, n_components=None, weight_by_
     return labels
 
 
-def vonmises_mixture(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=False, keep_first=True, positive_eigs=False):
+def vonmises_mixture(
+    eigvals,
+    eigvecs,
+    n_clusters,
+    n_components=None,
+    weight_by_eigval=False,
+    keep_first=True,
+    positive_eigs=False,
+):
     """
     Extend the spherical kmeans method to a von Mises-Fisher (gaussian on a sphere) MM.
     * Use the unit-norm eigenvectors of L_rw or L_sym (doesn't matter for us).
@@ -325,7 +405,13 @@ def vonmises_mixture(eigvals, eigvecs, n_clusters, n_components=None, weight_by_
     )
 
     x, mask = _extract_eigs(
-        eigvals, eigvecs, n_clusters, n_components, weight_by_eigval, keep_first, positive_eigs
+        eigvals,
+        eigvecs,
+        n_clusters,
+        n_components,
+        weight_by_eigval,
+        keep_first,
+        positive_eigs,
     )
 
     # Normalize rows to norm 1
@@ -338,30 +424,44 @@ def vonmises_mixture(eigvals, eigvecs, n_clusters, n_components=None, weight_by_
     return labels
 
 
-def gaussian_hmm(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigval=False, keep_first=True, positive_eigs=False):
+def gaussian_hmm(
+    eigvals,
+    eigvecs,
+    n_clusters,
+    n_components=None,
+    weight_by_eigval=False,
+    keep_first=True,
+    positive_eigs=False,
+):
     """
-    Model the rows (points) as an HMM on k different latent k-dimensional 
+    Model the rows (points) as an HMM on k different latent k-dimensional
     Gaussian states.
     """
     from hmmlearn.hmm import GaussianHMM
     from sklearn.cluster import KMeans
 
     x, mask = _extract_eigs(
-        eigvals, eigvecs, n_clusters, n_components, weight_by_eigval, keep_first, positive_eigs
+        eigvals,
+        eigvecs,
+        n_clusters,
+        n_components,
+        weight_by_eigval,
+        keep_first,
+        positive_eigs,
     )
     NULL = -100
     kmeans = KMeans(
         n_clusters=n_clusters,
-        init='k-means++',
+        init="k-means++",
         n_init=100,
         max_iter=10000,
         tol=0.00001,
-        precompute_distances='auto',
+        precompute_distances="auto",
         verbose=0,
         random_state=42,
         copy_x=True,
         n_jobs=32,
-        algorithm='auto',
+        algorithm="auto",
     )
     kmeans.fit(x)
     means_init = kmeans.cluster_centers_.tolist()
@@ -369,27 +469,30 @@ def gaussian_hmm(eigvals, eigvecs, n_clusters, n_components=None, weight_by_eigv
     means_init = np.array(means_init)
 
     X = _extract_eigs(
-        eigvals, eigvecs, n_clusters, n_components, weight_by_eigval, keep_first, filter_nans=False, positive_eigs=positive_eigs
+        eigvals,
+        eigvecs,
+        n_clusters,
+        n_components,
+        weight_by_eigval,
+        keep_first,
+        filter_nans=False,
+        positive_eigs=positive_eigs,
     )
     X[np.isnan(X)] = NULL
     hmm = GaussianHMM(
         n_components=n_clusters + 1,  # add 1 explicit NULL state
-        covariance_type='full',
+        covariance_type="full",
         min_covar=0.0001,
         n_iter=100,
         random_state=42,
-        init_params='stc',
+        init_params="stc",
     )
     hmm.means_ = means_init
     hmm.fit(X)
 
     Y = hmm.predict(X)
     key = -hmm.means_.min(axis=1)
-    relabel = dict(zip(
-        range(n_clusters + 1),
-        np.argsort(key)
-    ))
+    relabel = dict(zip(range(n_clusters + 1), np.argsort(key)))
     labels = np.array([relabel[y] for y in Y])
 
     return labels
-
