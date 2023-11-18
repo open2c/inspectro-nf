@@ -15,7 +15,6 @@ process make_track_db {
 
     output:
         path "*.h5", emit: trackdb
-        path "local_track_files/*", emit: local_path
 
     script:
 
